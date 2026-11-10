@@ -1,4 +1,34 @@
-# ParkLink
+# Integrated platform
+
+The complete ParkLink workspace: mobile, owner dashboard, Gateway, eight services, shared packages and local infrastructure.
+
+## Responsibilities
+
+- Combines component snapshots into the npm workspace and Docker Compose stack.
+- Defines service boundaries, databases, messaging, tests and local setup.
+- Individual component repositories are separate snapshots and do not automatically synchronize.
+
+## Technology
+
+TypeScript, NestJS, PostgreSQL/PostGIS, RabbitMQ, React, Flutter.
+
+## C4 architecture
+
+The diagram is a C4 **container view** focused on this repository and its relevant neighbors. It is generated from [Structurizr DSL](docs/architecture/workspace.dsl) using default styles, without custom colors. Arrows show the direction of an interaction; the full model also records message flows.
+
+![C4 container view: Integrated platform](docs/architecture/containers.svg)
+
+To inspect or regenerate the diagram, open `docs/architecture/workspace.dsl` in Structurizr. With the Structurizr CLI and Graphviz installed:
+
+```sh
+structurizr.sh validate -workspace docs/architecture/workspace.dsl
+mkdir -p /tmp/parklink-diagram
+structurizr.sh export -workspace docs/architecture/workspace.dsl -format dot -output /tmp/parklink-diagram
+dot -Tsvg /tmp/parklink-diagram/structurizr-Containers.dot -o docs/architecture/containers.svg
+```
+
+## Complete setup and reference
+
 
 A working local parking-marketplace vertical slice, adapted from the original Flutter PANAMERICANOS-MOBILE application. Eight independent NestJS services own eight independent PostgreSQL databases. RabbitMQ separates durable reservation commands from confirmed domain events. This is **not a production-complete delivery**; known gaps are listed below.
 
