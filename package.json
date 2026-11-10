@@ -1,0 +1,15 @@
+{
+  "name": "parklink", "version": "0.1.0", "private": true,
+  "engines": { "node": ">=22" },
+  "workspaces": ["packages/*", "services/*", "gateway", "apps/owner-dashboard"],
+  "scripts": {
+    "build:shared": "npm run build -w @parklink/contracts && npm run build -w @parklink/runtime",
+    "build": "npm run build:shared && npm run build --workspaces --if-present --exclude-workspace=@parklink/contracts --exclude-workspace=@parklink/runtime",
+    "test": "tsx --test tests/*.test.ts",
+    "test:integration": "tsx --test tests/integration/*.test.ts",
+    "lint": "eslint packages services gateway tests apps/owner-dashboard/src",
+    "typecheck": "npm run build"
+  },
+  "overrides": { "multer": "^2.5.0", "js-yaml": "^5.5.0" },
+  "devDependencies": { "@types/node": "^22.15.0", "typescript": "~5.8.3", "tsx": "^4.19.4", "eslint": "^9.26.0", "typescript-eslint": "^8.32.0" }
+}

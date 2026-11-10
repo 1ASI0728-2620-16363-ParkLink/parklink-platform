@@ -1,0 +1,23 @@
+image:
+  repository: registry.example.com/parklink/reservation-service
+  tag: replace-with-immutable-commit-tag
+replicas: 2
+existingSecret: reservation-service-env
+env:
+  NODE_ENV: production
+  PORT: '3000'
+  CORS_ORIGINS: https://owners.example.com
+migrations: true
+resources:
+  requests: {cpu: 100m, memory: 192Mi}
+  limits: {cpu: '1', memory: 512Mi}
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  cpu: 70
+ingress:
+  enabled: false
+  className: nginx
+  host: api.example.com
+  tlsSecret: parklink-api-tls

@@ -1,0 +1,11 @@
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${PARKLINK_LAN_IP:?Set PARKLINK_LAN_IP to the local interface address}:8080:8080"
+    volumes:
+      - ./infrastructure/nginx/lan.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [edge]
+    depends_on:
+      - gateway

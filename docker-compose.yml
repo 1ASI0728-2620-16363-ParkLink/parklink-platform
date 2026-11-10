@@ -1,0 +1,191 @@
+x-app: &app
+  restart: unless-stopped
+  init: true
+  networks: [private]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  environment: &env
+    NODE_ENV: development
+    PORT: 3000
+    JWT_SECRET: ${JWT_SECRET:?Run node scripts/configure-local.mjs}
+    AMQP_URL: amqp://parklink:${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD}@rabbitmq:5672
+    CORS_ORIGINS: http://localhost:5173
+    RATE_LIMIT_PER_MINUTE: 600
+x-db: &db
+  image: postgres:16-alpine
+  restart: unless-stopped
+  networks: [private]
+  healthcheck:
+    test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+    interval: 3s
+    timeout: 3s
+    retries: 30
+services:
+  rabbitmq:
+    image: rabbitmq:4.1-management-alpine
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: parklink
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Run setup}
+    volumes: [rabbit-data:/var/lib/rabbitmq, ./infrastructure/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro]
+    networks: [private]
+    ports: ['127.0.0.1:15672:15672']
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  redis:
+    image: redis:7.4-alpine
+    command: [redis-server, --appendonly, 'yes']
+    volumes: [redis-data:/data]
+    networks: [private]
+  identity-db:
+    <<: *db
+    environment: {POSTGRES_USER: identity, POSTGRES_DB: identity, POSTGRES_PASSWORD: '${IDENTITY_DB_PASSWORD:?Run setup}'}
+    volumes: [identity-data:/var/lib/postgresql/data]
+  supply-db:
+    <<: *db
+    environment: {POSTGRES_USER: supply, POSTGRES_DB: supply, POSTGRES_PASSWORD: '${SUPPLY_DB_PASSWORD:?Run setup}'}
+    volumes: [supply-data:/var/lib/postgresql/data]
+  discovery-db:
+    <<: *db
+    image: postgis/postgis:16-3.5-alpine
+    platform: linux/amd64
+    environment: {POSTGRES_USER: discovery, POSTGRES_DB: discovery, POSTGRES_PASSWORD: '${DISCOVERY_DB_PASSWORD:?Run setup}'}
+    volumes: [discovery-data:/var/lib/postgresql/data]
+  reservation-db:
+    <<: *db
+    environment: {POSTGRES_USER: reservation, POSTGRES_DB: reservation, POSTGRES_PASSWORD: '${RESERVATION_DB_PASSWORD:?Run setup}'}
+    volumes: [reservation-data:/var/lib/postgresql/data]
+  payment-db:
+    <<: *db
+    environment: {POSTGRES_USER: payment, POSTGRES_DB: payment, POSTGRES_PASSWORD: '${PAYMENT_DB_PASSWORD:?Run setup}'}
+    volumes: [payment-data:/var/lib/postgresql/data]
+  notification-db:
+    <<: *db
+    environment: {POSTGRES_USER: notification, POSTGRES_DB: notification, POSTGRES_PASSWORD: '${NOTIFICATION_DB_PASSWORD:?Run setup}'}
+    volumes: [notification-data:/var/lib/postgresql/data]
+  agent-db:
+    <<: *db
+    environment: {POSTGRES_USER: agent, POSTGRES_DB: agent, POSTGRES_PASSWORD: '${AGENT_DB_PASSWORD:?Run setup}'}
+    volumes: [agent-data:/var/lib/postgresql/data]
+  audit-db:
+    <<: *db
+    environment: {POSTGRES_USER: audit, POSTGRES_DB: audit, POSTGRES_PASSWORD: '${AUDIT_DB_PASSWORD:?Run setup}'}
+    volumes: [audit-data:/var/lib/postgresql/data]
+  identity-service:
+    <<: *app
+    build: {context: ., dockerfile: services/identity-service/Dockerfile}
+    environment:
+      <<: *env
+      DATABASE_URL: postgresql://identity:${IDENTITY_DB_PASSWORD}@identity-db:5432/identity
+    depends_on: {identity-db: {condition: service_healthy}, rabbitmq: {condition: service_healthy}}
+  parking-supply-service:
+    <<: *app
+    build: {context: ., dockerfile: services/parking-supply-service/Dockerfile}
+    environment:
+      <<: *env
+      DATABASE_URL: postgresql://supply:${SUPPLY_DB_PASSWORD}@supply-db:5432/supply
+    depends_on: {supply-db: {condition: service_healthy}, rabbitmq: {condition: service_healthy}}
+  parking-discovery-service:
+    <<: *app
+    build: {context: ., dockerfile: services/parking-discovery-service/Dockerfile}
+    environment:
+      <<: *env
+      DATABASE_URL: postgresql://discovery:${DISCOVERY_DB_PASSWORD}@discovery-db:5432/discovery
+      REDIS_URL: redis://redis:6379
+    depends_on: {discovery-db: {condition: service_healthy}, rabbitmq: {condition: service_healthy}}
+  reservation-service:
+    <<: *app
+    build: {context: ., dockerfile: services/reservation-service/Dockerfile}
+    environment:
+      <<: *env
+      DATABASE_URL: postgresql://reservation:${RESERVATION_DB_PASSWORD}@reservation-db:5432/reservation
+    depends_on: {reservation-db: {condition: service_healthy}, rabbitmq: {condition: service_healthy}}
+  payment-service:
+    <<: *app
+    build: {context: ., dockerfile: services/payment-service/Dockerfile}
+    environment:
+      <<: *env
+      DATABASE_URL: postgresql://payment:${PAYMENT_DB_PASSWORD}@payment-db:5432/payment
+      PAYMENT_PROVIDER: sandbox
+    depends_on: {payment-db: {condition: service_healthy}, rabbitmq: {condition: service_healthy}}
+  notification-service:
+    <<: *app
+    build: {context: ., dockerfile: services/notification-service/Dockerfile}
+    environment:
+      <<: *env
+      DATABASE_URL: postgresql://notification:${NOTIFICATION_DB_PASSWORD}@notification-db:5432/notification
+    depends_on: {notification-db: {condition: service_healthy}, rabbitmq: {condition: service_healthy}}
+  conversational-agent-service:
+    <<: *app
+    build: {context: ., dockerfile: services/conversational-agent-service/Dockerfile}
+    environment:
+      <<: *env
+      DATABASE_URL: postgresql://agent:${AGENT_DB_PASSWORD}@agent-db:5432/agent
+      COPILOT_ENABLED: 'true'
+      DISCOVERY_URL: http://parking-discovery-service:3000
+      RESERVATION_URL: http://reservation-service:3000
+      OPENCODE_URL: http://opencode-runtime:4096
+      OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:?Run node scripts/configure-copilot.mjs}
+      OPENCODE_INFERENCE_ENABLED: 'true'
+    depends_on: {agent-db: {condition: service_healthy}, rabbitmq: {condition: service_healthy}}
+  audit-service:
+    <<: *app
+    build: {context: ., dockerfile: services/audit-service/Dockerfile}
+    environment:
+      <<: *env
+      DATABASE_URL: postgresql://audit:${AUDIT_DB_PASSWORD}@audit-db:5432/audit
+    depends_on: {audit-db: {condition: service_healthy}, rabbitmq: {condition: service_healthy}}
+  gateway:
+    <<: *app
+    build: {context: ., dockerfile: gateway/Dockerfile}
+    networks: [private, edge]
+    ports: ['127.0.0.1:3000:3000']
+    environment:
+      <<: *env
+      IDENTITY_URL: http://identity-service:3000
+      SUPPLY_URL: http://parking-supply-service:3000
+      DISCOVERY_URL: http://parking-discovery-service:3000
+      RESERVATION_URL: http://reservation-service:3000
+      PAYMENT_URL: http://payment-service:3000
+      NOTIFICATION_URL: http://notification-service:3000
+      AGENT_URL: http://conversational-agent-service:3000
+      AUDIT_URL: http://audit-service:3000
+  owner-dashboard:
+    build: {context: ., dockerfile: apps/owner-dashboard/Dockerfile}
+    ports: ['127.0.0.1:5173:8080']
+    networks: [edge]
+  opencode-runtime:
+    build: {context: ., dockerfile: infrastructure/opencode/Dockerfile}
+    restart: unless-stopped
+    init: true
+    networks: [private]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:?Run node scripts/configure-copilot.mjs}
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+      - /home/node/.cache:rw,nosuid,uid=1000,gid=1000,size=256m
+      - /home/node/.config:rw,noexec,nosuid,uid=1000,gid=1000,size=16m
+      - /home/node/.local/share:rw,noexec,nosuid,uid=1000,gid=1000,size=128m
+      - /home/node/.local/state:rw,noexec,nosuid,uid=1000,gid=1000,size=32m
+    mem_limit: 768m
+    cpus: 1.5
+networks:
+  private: {}
+  edge: {}
+volumes:
+  rabbit-data: {}
+  redis-data: {}
+  identity-data: {}
+  supply-data: {}
+  discovery-data: {}
+  reservation-data: {}
+  payment-data: {}
+  notification-data: {}
+  agent-data: {}
+  audit-data: {}

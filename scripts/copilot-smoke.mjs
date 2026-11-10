@@ -1,0 +1,12 @@
+import {readFile} from 'node:fs/promises';
+import {randomUUID} from 'node:crypto';
+const base='http://localhost:3000',state=JSON.parse(await readFile(new URL('../.local/demo-accounts.json',import.meta.url),'utf8'));
+const client=state.users[0];
+const auth=await fetch(`${base}/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:client.email,password:client.password})});
+if(!auth.ok)throw new Error('Client login failed');const session=await auth.json();
+const status=await fetch(`${base}/copilot/status`,{headers:{Authorization:`Bearer ${session.token}`}}).then(r=>r.json());
+const request={requestId:randomUUID(),message:'Busca el estacionamiento más barato cerca del centro de Lima',latitude:-12.0464,longitude:-77.0428};
+const r=await fetch(`${base}/copilot/chat`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.token}`},body:JSON.stringify(request),signal:AbortSignal.timeout(55000)});
+const result=await r.json();if(!r.ok)throw new Error(`Copilot HTTP ${r.status}: ${result.message}`);
+console.log(JSON.stringify({runtimeReady:status.runtimeReady,inferenceEnabled:status.inferenceEnabled,engine:result.engine,action:result.action,items:result.items?.length??0,message:result.message,warning:result.warning??null},null,2));
+if(result.engine!=='opencode')process.exitCode=2;

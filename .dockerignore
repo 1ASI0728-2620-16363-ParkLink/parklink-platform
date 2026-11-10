@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/.git
+**/.env
+.env
+apps/mobile
+reference
+coverage
+infrastructure/local-secrets
+.local

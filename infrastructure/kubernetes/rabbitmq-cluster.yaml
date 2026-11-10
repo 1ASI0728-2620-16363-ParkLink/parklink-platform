@@ -1,0 +1,20 @@
+# Requires RabbitMQ Cluster Operator, installed separately by the platform team.
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata: {name: parklink-rabbitmq, namespace: parklink}
+spec:
+  replicas: 3
+  image: rabbitmq:4.1-management
+  persistence: {storage: 20Gi}
+  resources:
+    requests: {cpu: 250m, memory: 1Gi}
+    limits: {cpu: '2', memory: 2Gi}
+  tls:
+    secretName: rabbitmq-tls
+    caSecretName: rabbitmq-ca
+    disableNonTLSListeners: true
+  rabbitmq:
+    additionalConfig: |
+      default_queue_type = quorum
+      disk_free_limit.absolute = 2GB
+      consumer_timeout = 300000

@@ -1,0 +1,23 @@
+{{- if .Values.migrations }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-migrate
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 300
+  template:
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 1000}
+      containers:
+        - name: migration
+          image: '{{ .Values.image.repository }}:{{ .Values.image.tag }}'
+          command: [node, dist/main.js, --migrate]
+          envFrom: [{secretRef: {name: {{ .Values.existingSecret }}}}]
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+{{- end }}

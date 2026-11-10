@@ -1,0 +1,1 @@
+{"name":"@parklink/notification-service","version":"0.1.0","private":true,"scripts":{"build":"tsc -p tsconfig.json","start":"node dist/main.js","migrate":"node dist/main.js --migrate"},"dependencies":{"@parklink/runtime":"0.1.0","@parklink/contracts":"0.1.0"}}
