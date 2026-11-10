@@ -1,3 +1,3 @@
-# Redis scope
+# Alcance de Redis
 
-Redis is provisioned with AOF and an independent volume for future disposable discovery/conversation caching. It is not used by current application handlers and is not a reservation authority. Removing Redis must not change reservation correctness. Production Redis needs private networking, ACL credentials and TLS; do not expose the local unsecured instance.
+Redis está aprovisionado con AOF y un volumen independiente para una futura caché descartable de búsqueda o conversación. Los manejadores actuales de la aplicación no lo utilizan y no es la autoridad de las reservas. Su eliminación no debe alterar la corrección de las reservas. En producción, Redis necesita una red privada, credenciales ACL y TLS; no exponga la instancia local sin protección.

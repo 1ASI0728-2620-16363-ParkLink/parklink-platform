@@ -1,26 +1,25 @@
-# Integrated platform
+# Plataforma integrada de ParkLink
 
-The integrated ParkLink backend and owner dashboard workspace, with the mobile application maintained in its own repository.
+Espacio integrado del backend y el panel web de ParkLink. La aplicación móvil se mantiene en su propio repositorio.
 
-## Responsibilities
+## Responsabilidades
 
-- Combines component snapshots into the npm workspace and Docker Compose stack.
-- Defines service boundaries, databases, messaging, tests and local setup.
-- Individual component repositories are separate snapshots and do not automatically synchronize.
-- The mobile application is maintained separately in [parklink-mobile](https://github.com/1ASI0728-2620-16363-ParkLink/parklink-mobile).
-- The owner dashboard is also published in [parklink-web](https://github.com/1ASI0728-2620-16363-ParkLink/parklink-web).
+- Integra las copias de los componentes del backend y el panel en un espacio de trabajo npm y una configuración de Docker Compose.
+- Define los límites entre servicios, bases de datos, mensajería, pruebas e infraestructura local.
+- Los repositorios individuales son copias independientes y no se sincronizan automáticamente.
+- La aplicación móvil se mantiene en [parklink-mobile](https://github.com/1ASI0728-2620-16363-ParkLink/parklink-mobile); el panel web también se publica en [parklink-web](https://github.com/1ASI0728-2620-16363-ParkLink/parklink-web).
 
-## Technology
+## Tecnologías
 
-TypeScript, NestJS, PostgreSQL/PostGIS, RabbitMQ, React, Flutter.
+TypeScript, NestJS, PostgreSQL/PostGIS, RabbitMQ, React y Flutter.
 
-## C4 architecture
+## Arquitectura C4
 
-The diagram is a C4 **container view** focused on this repository and its relevant neighbors. It is generated from [Structurizr DSL](docs/architecture/workspace.dsl) using default styles, without custom colors. Arrows show the direction of an interaction; the full model also records message flows.
+El diagrama presenta una **vista de contenedores C4** del sistema y sus relaciones. Se genera desde [Structurizr DSL](docs/architecture/workspace.dsl) con los estilos predeterminados, sin colores personalizados. Las flechas indican la dirección de las interacciones. El diagrama se conserva en inglés.
 
-![C4 container view: Integrated platform](docs/architecture/containers.svg)
+![Diagrama C4 de la plataforma integrada](docs/architecture/containers.svg)
 
-To inspect or regenerate the diagram, open `docs/architecture/workspace.dsl` in Structurizr. With the Structurizr CLI and Graphviz installed:
+Para consultar o regenerar el diagrama, abra `docs/architecture/workspace.dsl` en Structurizr. Con Structurizr CLI y Graphviz instalados:
 
 ```sh
 structurizr.sh validate -workspace docs/architecture/workspace.dsl
@@ -29,14 +28,13 @@ structurizr.sh export -workspace docs/architecture/workspace.dsl -format dot -ou
 dot -Tsvg /tmp/parklink-diagram/structurizr-Containers.dot -o docs/architecture/containers.svg
 ```
 
-## Complete setup and reference
+## Descripción general
 
+ParkLink es una implementación local de un mercado de estacionamientos adaptada de la aplicación Flutter PANAMERICANOS-MOBILE. Ocho servicios NestJS independientes tienen sus propias bases de datos PostgreSQL. RabbitMQ separa los comandos duraderos de reserva de los eventos de dominio confirmados. **No es una entrega completa para producción**; las limitaciones conocidas se describen más abajo.
 
-A working local parking-marketplace vertical slice, adapted from the original Flutter PANAMERICANOS-MOBILE application. Eight independent NestJS services own eight independent PostgreSQL databases. RabbitMQ separates durable reservation commands from confirmed domain events. This is **not a production-complete delivery**; known gaps are listed below.
+## Inicio local
 
-## Start locally
-
-Prerequisites: Docker Desktop with sufficient disk/RAM, Node 22, and Flutter 3.44.1 / Dart 3.12.1 for mobile. Keep at least 10 GB free for native builds and container caches.
+Requisitos: Docker Desktop con suficiente espacio y memoria, Node 22 y, para la aplicación móvil, Flutter 3.44.1 / Dart 3.12.1. Mantenga al menos 10 GB libres para compilaciones nativas y cachés de contenedores.
 
 ```sh
 npm ci
@@ -45,37 +43,37 @@ docker compose up -d --build --wait
 node scripts/seed-rich.mjs
 ```
 
-`configure-local.mjs` creates random local credentials and refuses to overwrite an existing `.env`. For an existing setup without the new isolated OpenCode password, run `node scripts/configure-copilot.mjs` instead. Never print or commit the `.env` file.
+`configure-local.mjs` genera credenciales locales aleatorias y no sobrescribe un archivo `.env` existente. En una instalación existente sin la contraseña del entorno aislado de OpenCode, ejecute `node scripts/configure-copilot.mjs`. Nunca imprima ni suba el archivo `.env`.
 
-| Component | Local address |
+| Componente | Dirección local |
 |---|---|
-| Public API Gateway | http://localhost:3000 |
-| Read-only owner dashboard | http://localhost:5173 |
-| RabbitMQ management | http://localhost:15672 (credentials from private `.env`) |
-| OpenCode, databases and internal services | Private Compose network only |
+| Pasarela de API pública | http://localhost:3000 |
+| Panel de propietarios de solo lectura | http://localhost:5173 |
+| Administración de RabbitMQ | http://localhost:15672 (credenciales en el archivo privado `.env`) |
+| OpenCode, bases de datos y servicios internos | Solo en la red privada de Compose |
 
-The rich seed creates a verified local client account `cliente@parklink.test`. Its randomly generated password is in the ignored, mode-0600 `.local/demo-accounts.json`; no default production password is shipped. Fixtures are explicitly fictitious and all payments are sandbox. Re-running the seed preserves identifiers and idempotency keys rather than deleting data. See [development data](docs/development-data.md).
+La carga de datos de prueba crea la cuenta local `cliente@parklink.test`. Su contraseña aleatoria está en `.local/demo-accounts.json`, archivo ignorado y con permisos 0600; no se distribuye una contraseña de producción. Los datos son ficticios y todos los pagos son de prueba. Al repetir la carga se conservan los identificadores y las claves de idempotencia. Consulte los [datos de desarrollo](docs/development-data.md).
 
-## iOS Simulator
+## Aplicación móvil
 
-Clone [parklink-mobile](https://github.com/1ASI0728-2620-16363-ParkLink/parklink-mobile), then run these commands from its root:
+Clone [parklink-mobile](https://github.com/1ASI0728-2620-16363-ParkLink/parklink-mobile) y ejecute desde su raíz:
 
 ```sh
 flutter pub get
 flutter run -d YOUR_SIMULATOR_UDID --debug --dart-define=PARKLINK_API_URL=http://localhost:3000
 ```
 
-The currently used iPhone 18 Pro simulator is `734C0950-B1C9-46AB-AD70-0686E9EA95D8`. Xcode 27 installations may expose DeviceHub instead of Simulator.app. CocoaPods targets below iOS 15 are raised to 15 without lowering higher plugin requirements. No physical-device signing or App Store deployment has been performed.
+En el emulador de Android, utilice `--dart-define=PARKLINK_API_URL=http://10.0.2.2:3000`. Las versiones de producción deben usar una dirección HTTPS de la pasarela. El punto de entrada heredado `legacy_transport_main.dart` se conserva como referencia y no inicia ParkLink.
 
-Android emulator development uses `--dart-define=PARKLINK_API_URL=http://10.0.2.2:3000`. Production builds must use an HTTPS Gateway endpoint. The original transport entry remains in `legacy_transport_main.dart` for provenance and is not launched by ParkLink.
+Las compilaciones iOS pueden requerir ajustes de CocoaPods y firma en Xcode; consulte la documentación de la aplicación móvil. Los archivos de Firebase y las credenciales de firma no están incluidos.
 
-## Copilot
+## Asistente conversacional
 
-Double-tap the authenticated main screen, or press the labelled sparkle button. Choose an interval, then ask for the closest or cheapest parking space. Search results and all actions use actual services, not invented inventory. Mutations require a separate price/resource-bound confirmation; a hold does not itself charge or confirm a reservation.
+Pulse dos veces la pantalla principal autenticada o el botón accesible del asistente. Seleccione un intervalo y solicite los estacionamientos más cercanos o económicos. Las búsquedas y acciones utilizan servicios reales. Las modificaciones requieren una confirmación vinculada al recurso y al precio; una retención no significa por sí sola un cobro ni una reserva confirmada.
 
-The background process is an independent, isolated OpenCode 1.19.5 server using its official SDK. No personal OpenCode settings or credentials are mounted. Only its advertised zero-cost default provider is permitted. **The free provider timed out during live inference checks in this environment**; the UI truthfully identifies guided fallback when this happens. Runtime connectivity and application action flows are tested independently from generative-model availability. See [Copilot](docs/copilot.md) for the persona, permissions, data boundaries and consent protocol.
+El proceso independiente usa un servidor aislado OpenCode 1.19.5 y su SDK oficial, sin montar configuraciones ni credenciales personales. Consulte [la documentación del asistente](docs/copilot.md) para conocer los permisos, límites de datos y confirmaciones. La disponibilidad real de inferencia depende del proveedor; no debe asumirse que está funcionando sin comprobarla.
 
-## Build and test
+## Compilación y pruebas
 
 ```sh
 npm run build
@@ -85,20 +83,13 @@ npm run test:integration
 npm audit --omit=dev
 ```
 
-Integration tests require the running local Compose stack. They use real HTTP, PostgreSQL and RabbitMQ. Tests create clearly named fixtures; they do not reset production data. The Copilot integration test may spend up to 30 seconds waiting for the free provider before verifying the labelled guided fallback.
+Las pruebas de integración requieren los servicios locales de Compose y utilizan HTTP, PostgreSQL y RabbitMQ reales. Crean datos de prueba identificables y no reinician datos de producción. Para las pruebas móviles, ejecute `flutter analyze` y `flutter test` desde el repositorio `parklink-mobile`.
 
-From the root of the separately cloned `parklink-mobile` repository:
+`node scripts/copilot-smoke.mjs` requiere una respuesta generada por OpenCode y devuelve un error si no puede obtenerla. No debe informarse como una prueba de inferencia exitosa cuando el proveedor no esté disponible.
 
-```sh
-flutter analyze
-flutter test
-```
+## Servicios independientes y despliegue
 
-`node scripts/copilot-smoke.mjs` specifically requires a real OpenCode-generated result and exits nonzero when fallback was used. It must not be described as a passing AI inference test if the free model is unavailable.
-
-## Independent services and deployment preparation
-
-Every service has its own `package.json`, `Dockerfile`, migration directory and `.env.example`. For example:
+Cada servicio tiene su propio `package.json`, `Dockerfile`, directorio de migraciones y `.env.example`. Por ejemplo:
 
 ```sh
 npm run build:shared
@@ -107,46 +98,46 @@ docker compose up -d --build reservation-service
 sh scripts/image.sh reservation-service registry.example.com/parklink immutable-commit-tag
 ```
 
-Image scripts build locally and deliberately do not push or deploy. Services support `node dist/main.js --migrate`; migrations use per-database advisory locks and checksums. The shared packages contain contracts and infrastructure utilities, not shared database entities.
+Los scripts de imágenes compilan localmente y no publican ni despliegan. Los servicios admiten `node dist/main.js --migrate`; las migraciones usan bloqueos por base de datos y sumas de verificación. Los paquetes compartidos contienen contratos y utilidades de infraestructura, no entidades de base de datos compartidas.
 
-`infrastructure/helm/parklink-service` is a template for one independent Helm release per service, with an existing Secret, migration Job, probes, HPA, PDB and optional Gateway ingress. Configure each service's unique managed PostgreSQL URL and AMQPS connection. Kubernetes examples include namespace/network policy and a three-node RabbitMQ Cluster Operator resource. These templates have not been validated against a live cluster and are not a claim of production readiness.
+`infrastructure/helm/parklink-service` es una plantilla para una instalación Helm por servicio, con secreto existente, tarea de migración, comprobaciones de salud, HPA, PDB e ingreso opcional para la pasarela. Configure una conexión PostgreSQL propia y AMQPS para cada servicio. Los ejemplos de Kubernetes incluyen espacio de nombres, política de red y un recurso RabbitMQ de tres nodos. Estas plantillas no se han validado en un clúster real y no garantizan preparación para producción.
 
-See [architecture](docs/architecture.md), [RabbitMQ](infrastructure/rabbitmq/README.md), [PostgreSQL operations](infrastructure/postgres/operations.md) and [repository audit/reuse matrix](docs/repository-audit.md).
+Consulte [arquitectura](docs/architecture.md), [RabbitMQ](infrastructure/rabbitmq/README.md), [operaciones de PostgreSQL](infrastructure/postgres/operations.md) y [auditoría de repositorios](docs/repository-audit.md).
 
-## Main API contracts
+## Contratos principales de la API
 
-All protected endpoints require `Authorization: Bearer <JWT>`. Amounts are integer PEN céntimos. Dates use RFC3339; the UI presents Lima time. Internal services expose `/health`, `/ready` and `/metrics`. Development Swagger is at each service's internal `/docs`; only the Gateway is a public API entry point.
+Todos los extremos protegidos requieren `Authorization: Bearer <JWT>`. Los importes se expresan en céntimos de PEN y las fechas usan RFC3339; la interfaz presenta la hora de Lima. Los servicios internos ofrecen `/health`, `/ready` y `/metrics`. En desarrollo, Swagger está disponible en `/docs` de cada servicio interno; la pasarela es el único punto público de entrada a la API.
 
-| Endpoint | Purpose |
+| Extremo | Propósito |
 |---|---|
-| `POST /auth/register`, `/auth/login` | Account and mobile session |
-| `POST /auth/monitor-login` | Read-only owner-monitoring session |
-| `GET /auth/me` | Authenticated profile |
-| `POST /spaces`, `PUT /spaces/:id`, `GET /spaces/mine` | Owner publication/revision |
-| `GET /discovery/search` | Geographic query with interval, price, feature and nearest/cheapest sort |
-| `POST /reservations/commands/hold\|confirm\|cancel` | Durable acceptance, requires `Idempotency-Key`, returns 202 |
-| `GET /operations/:id` | Persisted command result; 202 acceptance does not mean success |
-| `GET /reservations/mine`, `/reservations/owner`, `/reservations/:id` | Authorized reservation queries |
-| `GET /payments/mine`, `/payments/owner`, `/payments/:id` | Financial state/history |
-| `GET /owner/dashboard` | Read-only aggregation, explicitly indicates truncation |
-| `/notifications` and `/notifications/preferences` | In-app delivery and preferences |
-| `GET /copilot/status`, `POST /copilot/chat` | Runtime status and authenticated dialogue |
-| `POST /copilot/propose-hold`, `/copilot/propose-action` | Exact server-generated consent proposal |
-| `POST /copilot/confirm/:id`, `GET /copilot/commands/:id` | Human approval and durable action result |
+| `POST /auth/register`, `/auth/login` | Registro y sesión móvil |
+| `POST /auth/monitor-login` | Sesión de monitoreo de solo lectura |
+| `GET /auth/me` | Perfil autenticado |
+| `POST /spaces`, `PUT /spaces/:id`, `GET /spaces/mine` | Publicación y revisión por el propietario |
+| `GET /discovery/search` | Búsqueda geográfica por intervalo, precio, características y orden |
+| `POST /reservations/commands/hold\|confirm\|cancel` | Aceptación duradera; requiere `Idempotency-Key` y devuelve 202 |
+| `GET /operations/:id` | Resultado persistido; la aceptación 202 no implica éxito |
+| `GET /reservations/mine`, `/reservations/owner`, `/reservations/:id` | Consultas autorizadas de reservas |
+| `GET /payments/mine`, `/payments/owner`, `/payments/:id` | Estado e historial de pagos |
+| `GET /owner/dashboard` | Información agregada de solo lectura; indica si está truncada |
+| `/notifications` y `/notifications/preferences` | Notificaciones internas y preferencias |
+| `GET /copilot/status`, `POST /copilot/chat` | Estado y conversación autenticada del asistente |
+| `POST /copilot/propose-hold`, `/copilot/propose-action` | Propuesta de consentimiento generada por el servidor |
+| `POST /copilot/confirm/:id`, `GET /copilot/commands/:id` | Aprobación humana y resultado del comando |
 
-The command/event exchanges and queue contracts are documented in the RabbitMQ guide. Discovery is informational; Reservation always revalidates availability. Free cancellation includes the exact 60-minute boundary. Late fees are intentionally not invented; without configured terms, late cancellation is refused.
+Los contratos de colas e intercambios se describen en la guía de RabbitMQ. La búsqueda es informativa; el servicio de reservas vuelve a validar la disponibilidad. La cancelación gratuita incluye exactamente el límite de 60 minutos. Si no hay una política configurada, se rechaza la cancelación tardía en vez de inventar un cargo.
 
-## Known gaps before production
+## Limitaciones antes de producción
 
-- Private photo uploads/object storage, recurring opening hours/blockout editor, paid extensions, profile editing and verified owner onboarding are incomplete.
-- Push/email delivery, fiscal receipts, token refresh/revocation and full tactical repository-port separation are incomplete.
-- Mercado Pago adapter code is prepared but not provider-certified or tested with real credentials; never treat sandbox transactions as real charges.
-- Production mTLS, asymmetric JWT key distribution, least-privilege database runtime/migration roles, broker users and egress policies require completion.
-- Metrics above the current 500-row query window are explicitly marked partial; no production load/SLO test is claimed.
-- No external deployment, image push, paid AI consumption or real payment was performed.
+- Faltan la carga privada de fotos, el editor de horarios recurrentes y bloqueos, las extensiones pagadas, la edición de perfiles y la incorporación verificada de propietarios.
+- Faltan el envío por correo y notificaciones push, comprobantes fiscales, renovación o revocación de tokens y una separación completa mediante puertos de repositorio.
+- El adaptador de Mercado Pago está preparado, pero no está certificado ni probado con credenciales reales; los pagos de prueba no son cobros reales.
+- Deben completarse mTLS de producción, distribución de claves JWT asimétricas, permisos mínimos de base de datos y mensajería y políticas de salida.
+- Las métricas que superan la ventana actual de 500 registros se marcan como parciales; no se ha demostrado un objetivo de carga o servicio de producción.
+- No se ha realizado un despliegue externo, publicación de imágenes, consumo de IA de pago ni pagos reales.
 
-## Public snapshot notes
+## Notas sobre los repositorios públicos
 
-This is the integrated workspace for the backend and dashboard. The separately published backend component repositories are snapshots of paths in this workspace and do not independently contain the root npm workspace configuration or shared packages. The mobile app is maintained separately in `parklink-mobile`.
+Este repositorio integra el backend y el panel. Los repositorios de componentes del backend son copias independientes y no incluyen por sí solos la configuración npm ni los paquetes compartidos del espacio integrado. La aplicación móvil se mantiene en `parklink-mobile`.
 
-Local environment files, signing credentials, Firebase configuration, and the legacy Google Maps API key are intentionally excluded. Provide your own Firebase configuration and, when using legacy Google Maps features, a restricted `GOOGLE_MAPS_API_KEY` via Flutter `--dart-define`.
+Se excluyen los archivos de entorno locales, credenciales de firma, configuración de Firebase y la clave heredada de Google Maps. Si utiliza esas funciones, proporcione su propia configuración y una clave `GOOGLE_MAPS_API_KEY` restringida mediante `--dart-define`.

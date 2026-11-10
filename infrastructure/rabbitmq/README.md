@@ -1,21 +1,23 @@
-# Command broker and event bus
+# Intermediario de comandos y bus de eventos
 
-The broker is independent from the Gateway. `packages/runtime/src/messaging.ts` declares durable topology before any outbox relay starts, including consumers that are currently offline. This prevents an initial publication from disappearing because a downstream process has not started yet.
+El intermediario es independiente de la pasarela. `packages/runtime/src/messaging.ts` declara una topología duradera antes de iniciar la publicación de la bandeja de salida, incluidas las colas cuyos consumidores estén desconectados. Esto evita que una publicación inicial desaparezca porque un proceso consumidor aún no se ha iniciado.
 
-| Exchange | Queue | Bindings |
+| Intercambio | Cola | Claves de enlace |
 |---|---|---|
 | parklink.commands.v1 | reservation.commands.v1 | reservation.*.v1 |
 | parklink.commands.v1 | payment.commands.v1 | payment.*.v1 |
 | parklink.events.v1 | reservation.events.v1 | supply.revision-proposed.v1, payment.authorized.v1, payment.failed.v1 |
 | parklink.events.v1 | supply.events.v1 | supply.revision-accepted.v1, supply.revision-rejected.v1 |
 | parklink.events.v1 | discovery.events.v1 | supply.revision-accepted.v1, reservation.*.v1 |
-| parklink.events.v1 | notification.events.v1 | confirmed, cancelled, expired, payment-failed and refund events |
+| parklink.events.v1 | notification.events.v1 | Eventos de confirmación, cancelación, caducidad, fallo de pago y reembolso |
 | parklink.events.v1 | audit.events.v1 | # |
 
-All primary, retry and dead queues are quorum queues. Every primary queue has `.retry` (3-second TTL) and `.dlq` companions. A failed handler republishes persistently to retry and waits for publisher confirmation before acknowledging the original. At most three application retries are attempted; exhausted messages are dead-lettered to `parklink.dead.v1`. Broker failures leave the original unacknowledged. Reconnection redeclares compatible topology. Consumers ack only after their local transaction commits; inbox primary keys deduplicate replay. Outbox rows are marked published only after broker confirmation; a crash can republish the same ID safely.
+Todas las colas principales, de reintento y de mensajes fallidos son de tipo cuórum. Cada cola principal tiene una cola `.retry` con vencimiento de tres segundos y una cola `.dlq`. Cuando falla un manejador, el mensaje se publica de forma persistente en la cola de reintento y se espera la confirmación del intermediario antes de confirmar el original. Se realizan hasta tres reintentos de aplicación; los mensajes que los agotan se envían a `parklink.dead.v1`. Si falla el intermediario, el mensaje original queda sin confirmar. Al reconectar se vuelve a declarar la topología compatible.
 
-At-least-once SQL/AMQP handling is NOT exactly-once transport. Production must additionally configure RabbitMQ quorum at-least-once dead-lettering and `overflow=reject-publish` policies, capacity alerts and publisher timeout limits. A single-node local quorum queue provides persistence but not high availability; use the three-node operator manifest in production.
+Los consumidores confirman los mensajes después de completar su transacción local; las claves de la bandeja de entrada permiten detectar repeticiones. Los registros de la bandeja de salida se marcan como publicados después de la confirmación del intermediario. Una caída puede provocar la republicación del mismo identificador, que debe procesarse de forma idempotente.
 
-Inspect queues: `docker compose exec rabbitmq rabbitmqctl list_queues name messages_ready messages_unacknowledged`. Investigate DLQs before replay. Preserve message IDs, actor and correlation IDs, and replay into the original primary queue after fixing the handler. Never turn a failed command into a fake confirmed event. Pending operations corresponding to exhausted messages require operator intervention; an automated terminal-status reconciliation worker is not implemented yet.
+El procesamiento SQL/AMQP con entrega al menos una vez **no equivale a transporte exactamente una vez**. En producción también se deben configurar el envío de mensajes fallidos de cuórum con entrega al menos una vez, las políticas `overflow=reject-publish`, alertas de capacidad y límites de espera para publicación. Una cola de cuórum en un solo nodo local proporciona persistencia, pero no alta disponibilidad; para producción utilice el manifiesto del operador con tres nodos.
 
-Local development shares a broker credential so each process can declare topology. Production needs separate broker users, scoped exchange/queue permissions and a topology provisioning job before narrowing configure permissions. Use AMQPS and trusted certificates. Local management is bound only to loopback port 15672.
+Para inspeccionar las colas: `docker compose exec rabbitmq rabbitmqctl list_queues name messages_ready messages_unacknowledged`. Investigue las colas de mensajes fallidos antes de reprocesarlos. Después de corregir el manejador, conserve los identificadores del mensaje, actor y correlación y reenvíe el mensaje a la cola principal original. Nunca convierta un comando fallido en un evento de confirmación ficticio. Las operaciones pendientes asociadas a mensajes que agotaron los reintentos requieren intervención de un operador; aún no existe un proceso automático de conciliación de estados terminales.
+
+En desarrollo local se comparte una credencial del intermediario para que cada proceso pueda declarar la topología. En producción se necesitan usuarios separados, permisos limitados por intercambio y cola, y una tarea de aprovisionamiento de la topología antes de restringir los permisos de configuración. Use AMQPS y certificados confiables. La administración local solo escucha en la interfaz de retorno local, puerto 15672.
