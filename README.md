@@ -1,12 +1,13 @@
 # Integrated platform
 
-The complete ParkLink workspace: mobile, owner dashboard, Gateway, eight services, shared packages and local infrastructure.
+The integrated ParkLink backend and owner dashboard workspace, with the mobile application maintained in its own repository.
 
 ## Responsibilities
 
 - Combines component snapshots into the npm workspace and Docker Compose stack.
 - Defines service boundaries, databases, messaging, tests and local setup.
 - Individual component repositories are separate snapshots and do not automatically synchronize.
+- The mobile application is maintained separately in [parklink-mobile](https://github.com/1ASI0728-2620-16363-ParkLink/parklink-mobile).
 
 ## Technology
 
@@ -56,7 +57,7 @@ The rich seed creates a verified local client account `cliente@parklink.test`. I
 
 ## iOS Simulator
 
-From `apps/mobile`, run:
+Clone [parklink-mobile](https://github.com/1ASI0728-2620-16363-ParkLink/parklink-mobile), then run these commands from its root:
 
 ```sh
 flutter pub get
@@ -85,7 +86,7 @@ npm audit --omit=dev
 
 Integration tests require the running local Compose stack. They use real HTTP, PostgreSQL and RabbitMQ. Tests create clearly named fixtures; they do not reset production data. The Copilot integration test may spend up to 30 seconds waiting for the free provider before verifying the labelled guided fallback.
 
-From `apps/mobile`:
+From the root of the separately cloned `parklink-mobile` repository:
 
 ```sh
 flutter analyze
@@ -145,6 +146,6 @@ The command/event exchanges and queue contracts are documented in the RabbitMQ g
 
 ## Public snapshot notes
 
-This is the integrated workspace for the separately published ParkLink components. Component repositories are snapshots of paths in this workspace and do not independently contain the root npm workspace configuration or shared packages. Use this repository to build and run the full system.
+This is the integrated workspace for the backend and dashboard. The separately published backend component repositories are snapshots of paths in this workspace and do not independently contain the root npm workspace configuration or shared packages. The mobile app is maintained separately in `parklink-mobile`.
 
 Local environment files, signing credentials, Firebase configuration, and the legacy Google Maps API key are intentionally excluded. Provide your own Firebase configuration and, when using legacy Google Maps features, a restricted `GOOGLE_MAPS_API_KEY` via Flutter `--dart-define`.

@@ -4,7 +4,7 @@
 
 | Source | Branch / commit | Purpose |
 |---|---|---|
-| Maximoff19/PANAMERICANOS-MOBILE | main / 6fb9f1b6ecf3204d95ffe02ec627ec0494ba10fc | Actual mobile implementation, cloned intact in apps/mobile |
+| Maximoff19/PANAMERICANOS-MOBILE | main / 6fb9f1b6ecf3204d95ffe02ec627ec0494ba10fc | Original mobile implementation; the ParkLink adaptation is maintained in the separate `parklink-mobile` repository |
 | 1ASI0728-2620-16363-ParkLink/ParkLink-Report | develop / b67ce266d87270b490f6411feddd67db89622ad5 | Requirements and architecture, reference/ParkLink-Report |
 
 Both repositories were accessible through Git. The report is NOT backend code. Links in chapter V to a previous backend are background references, not proof of this implementation.
