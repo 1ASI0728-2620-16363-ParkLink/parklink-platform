@@ -8,6 +8,7 @@ The integrated ParkLink backend and owner dashboard workspace, with the mobile a
 - Defines service boundaries, databases, messaging, tests and local setup.
 - Individual component repositories are separate snapshots and do not automatically synchronize.
 - The mobile application is maintained separately in [parklink-mobile](https://github.com/1ASI0728-2620-16363-ParkLink/parklink-mobile).
+- The owner dashboard is also published in [parklink-web](https://github.com/1ASI0728-2620-16363-ParkLink/parklink-web).
 
 ## Technology
 
